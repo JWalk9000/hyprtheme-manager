@@ -1,7 +1,6 @@
 import os
 import json
 import subprocess
-import shutil
 
 def read_pywal_colors():
     PYWAL_COLORS = os.path.expanduser('~/.cache/wal/colors.json')
@@ -38,24 +37,6 @@ def write_config(path, content):
             f.write(content)
     except Exception as e:
         print(f"[ERROR] Could not write config {path}: {e}")
-
-def apply_wofi_wal():
-    if shutil.which("wofi-wal"):
-        subprocess.run(["wofi-wal"])
-
-def apply_waybar_wal():
-    # Reload waybar
-    try:
-        subprocess.run(["killall", "-SIGUSR2", "waybar"], check=False)
-    except:
-        pass
-
-def apply_mako_wal():
-    # Reload mako
-    try:
-        subprocess.run(["makoctl", "reload"], check=False)
-    except:
-        pass
 
 def set_wallpaper_swww(wallpaper_path):
     """Set wallpaper using swww"""

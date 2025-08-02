@@ -131,7 +131,10 @@ class ThemeManagerInstaller:
             'config_manager.py',
             'template_manager.py',
             'wallpaper_utils.py',
-            'app-locations.yaml',
+            'plugin_manager.py',
+            'plugin_config_window.py',
+            'plugins',
+            'config',
             'theme-manager-gtk'
         ]
         

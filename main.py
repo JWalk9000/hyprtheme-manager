@@ -15,8 +15,8 @@ from gi.repository import Gtk, Adw, Gio, Gdk, GLib
 
 # Add parent directory to path for imports
 sys.path.append(str(Path(__file__).parent.parent))
-from config_manager import load_theme_manager_config, load_config_locations, save_config_locations, default_app_locations
-from template_manager import read_pywal_colors, set_wallpaper_swww, apply_wofi_wal, apply_waybar_wal, apply_mako_wal
+from config_manager import load_theme_manager_config, save_theme_manager_config
+from template_manager import read_pywal_colors, set_wallpaper_swww
 from wallpaper_utils import get_wallpaper_dir, list_wallpapers, setup_wallpapers_dir, apply_wallpaper, get_wallpaper_preview_path
 from plugin_manager import PluginManager
 from plugin_config_window import PluginConfigWindow
@@ -350,11 +350,9 @@ class AppConfigWindow(Adw.PreferencesDialog):
             self.plugin_group.add(self.plugin_stats_row)
     
     def load_app_configs(self):
-        """Load application configurations"""
-        app_configs = load_config_locations()
-        
-        for app_name, config in app_configs.items():
-            self.create_app_row(app_name, config)
+        """Load application configurations - now handled by plugin system"""
+        # Plugin system handles app configuration, but we still need the old app rows for compatibility
+        # with existing saved settings until they're migrated to plugin config
         
         # Load preview setting
         self.load_preview_setting()
@@ -464,10 +462,8 @@ class AppConfigWindow(Adw.PreferencesDialog):
         self.apps_group.add(row)
     
     def on_app_enabled_changed(self, switch, _pspec, app_name):
-        """Handle app enable/disable"""
-        app_configs = load_config_locations()
-        app_configs[app_name]['enabled'] = switch.get_active()
-        save_config_locations(app_configs)
+        """Handle app enable/disable - deprecated, now handled by plugin system"""
+        pass
 
 
 class WindowSettingsDialog(Adw.PreferencesDialog):
@@ -843,12 +839,14 @@ class ThemeManagerApplication(Adw.Application):
     def reload_themed_apps(self):
         """Reload applications that might be using pywal colors"""
         try:
-            # Reload applications based on what's enabled
-            app_configs = load_config_locations()
-            
-            # Only reload apps that are enabled in our config
-            if app_configs.get('waybar', {}).get('enabled', False):
-                subprocess.run(['killall', '-SIGUSR2', 'waybar'], capture_output=True)
+            # Use plugin system to reload apps
+            colors = read_pywal_colors()
+            if colors:
+                results = self.plugin_manager.apply_themes(colors)
+                # Log any failures
+                for plugin_name, success in results.items():
+                    if not success:
+                        print(f"Failed to reload {plugin_name}")
             
         except Exception as e:
             print(f"Failed to reload themed apps: {e}")
@@ -1181,10 +1179,10 @@ class ThemeManagerWindow(Adw.ApplicationWindow):
 
     def update_status(self):
         """Update status displays"""
-        # Update app count
-        app_configs = load_config_locations()
-        enabled_count = sum(1 for config in app_configs.values() if config.get('enabled', False))
-        self.app_count_row.set_subtitle(f"{enabled_count} applications configured")
+        # Update plugin count
+        enabled_count = len(self.plugin_manager.get_enabled_plugins())
+        total_count = len(self.plugin_manager.get_all_plugins())
+        self.app_count_row.set_subtitle(f"{enabled_count} of {total_count} plugins enabled")
 
     def refresh_wallpaper_list(self, wallpapers):
         """Refresh the wallpaper list"""
