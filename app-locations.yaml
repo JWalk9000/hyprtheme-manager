@@ -1,0 +1,7 @@
+wofi: ~/.config/wofi/style.css
+waybar: ~/.config/waybar/style.css
+mako: ~/.config/mako/config
+kitty: ~/.config/kitty/pywal.conf
+gtk: ~/.config/gtk-3.0/settings.ini
+gtk4: org.gnome.desktop.interface
+qt: ~/.config/qt5ct/qt5ct.conf

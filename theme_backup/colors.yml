@@ -1,0 +1,24 @@
+wallpaper: "/home/zeus/Pictures/wallpapers/Photo by SpaceX.jpg"
+
+special:
+    background: "#0c141d"
+    foreground: "#c2c4c6"
+    cursor: "#c2c4c6"
+
+colors:
+    color0: "#0c141d"
+    color1: "#857B2D"
+    color2: "#8A7767"
+    color3: "#958F38"
+    color4: "#9F8A77"
+    color5: "#738484"
+    color6: "#AF9985"
+    color7: "#c2c4c6"
+    color8: "#5c6570"
+    color9: "#857B2D"
+    color10: "#8A7767"
+    color11: "#958F38"
+    color12: "#9F8A77"
+    color13: "#738484"
+    color14: "#AF9985"
+    color15: "#c2c4c6"

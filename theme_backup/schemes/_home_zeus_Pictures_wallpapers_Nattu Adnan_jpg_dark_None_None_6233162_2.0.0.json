@@ -1,0 +1,28 @@
+{
+    "checksum": "98db96786c80f80555684ad2b8c0f006",
+    "wallpaper": "/home/zeus/Pictures/wallpapers/Nattu Adnan.jpg",
+    "alpha": "100",
+    "special": {
+        "background": "#1e3947",
+        "foreground": "#c6cdd1",
+        "cursor": "#c6cdd1"
+    },
+    "colors": {
+        "color0": "#1e3947",
+        "color1": "#1096CE",
+        "color2": "#68A6D6",
+        "color3": "#90A4BB",
+        "color4": "#94B1D2",
+        "color5": "#AABAD0",
+        "color6": "#B8C5D6",
+        "color7": "#c6cdd1",
+        "color8": "#6d7d85",
+        "color9": "#1096CE",
+        "color10": "#68A6D6",
+        "color11": "#90A4BB",
+        "color12": "#94B1D2",
+        "color13": "#AABAD0",
+        "color14": "#B8C5D6",
+        "color15": "#c6cdd1"
+    }
+}

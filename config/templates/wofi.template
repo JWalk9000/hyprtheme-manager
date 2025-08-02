@@ -1,0 +1,16 @@
+window {
+    background-color: {{background}};
+    color: {{foreground}};
+    border: 1px solid {{color8}};
+}
+
+#input {
+    background-color: {{color0}};
+    color: {{foreground}};
+    border: 1px solid {{color8}};
+}
+
+#entry:selected {
+    background-color: {{color2}};
+    color: {{color15}};
+}

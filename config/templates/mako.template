@@ -1,0 +1,12 @@
+background-color={{background}}
+text-color={{foreground}}
+border-color={{color2}}
+border-size=2
+border-radius=5
+default-timeout=5000
+ignore-timeout=1
+
+[urgency=high]
+border-color={{color1}}
+background-color={{color1}}
+text-color={{color15}}

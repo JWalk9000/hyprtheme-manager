@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Theme Manager (GTK)
+Comment=Modern theme management with GTK4/Libadwaita interface
+Exec=/home/zeus/.config/Theme-Manager/theme-manager-gtk
+Icon=preferences-desktop-theme
+Terminal=false
+Categories=Settings;DesktopSettings;
+Keywords=theme;wallpaper;pywal;colors;gtk;
+StartupNotify=true
+StartupWMClass=com.thememanager.app
