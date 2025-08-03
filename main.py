@@ -882,8 +882,14 @@ class ThemeManagerWindow(Adw.ApplicationWindow):
         resizable = not self.window_settings.get('fixed_size', True)
         
         self.set_default_size(width, height)
+        # Set minimum window width to ensure palette readability (4 tiny swatches minimum)
+        self.set_size_request(400, 400)  # Reduced minimum width for better flexibility
         self.set_resizable(resizable)
         self.set_title("Theme Manager")
+        
+        # Connect resize handler for dynamic palette adjustment
+        # Use a different approach - monitor width changes with a timeout
+        self._resize_timeout_id = None
         
         self.setup_ui()
     
@@ -936,6 +942,133 @@ class ThemeManagerWindow(Adw.ApplicationWindow):
         
         # Save settings
         self.save_window_settings(settings)
+        
+        # Trigger palette resize when window settings are applied
+        self.recalculate_palette_layout()
+
+    def recalculate_palette_layout(self):
+        """Recalculate palette layout based on current window size"""
+        width = self.get_width()
+        if width < 100:  # Window not ready
+            return
+            
+        # Calculate available space more accurately
+        # Account for: window margins (48px total), scrollbar (20px), content margins (48px), flowbox spacing
+        window_margins = 48  # 24px on each side from content_box
+        scrollbar_space = 20
+        content_margins = 48  # 24px on each side from content margins
+        base_overhead = window_margins + scrollbar_space + content_margins
+        
+        available_width = width - base_overhead
+        
+        # Test different swatch counts to find the best fit
+        best_config = None
+        
+        for count in [8, 7, 6, 5, 4]:
+            # FlowBox uses column_spacing between swatches plus individual widget margins
+            flowbox_spacing = 4 * (count - 1)  # 4px between swatches
+            widget_margins = 4 * count  # 2px margin on each side of each widget (1px * 2 sides * count)
+            
+            total_spacing = flowbox_spacing + widget_margins
+            available_for_swatches = available_width - total_spacing
+            
+            if available_for_swatches > 0:
+                swatch_width = available_for_swatches // count
+                
+                # Check if this gives us a reasonable swatch size
+                if swatch_width >= 45:  # Minimum readable size
+                    best_config = (count, min(swatch_width, 120))  # Reasonable max size
+                    break
+        
+        # Fallback if nothing fits well
+        if not best_config:
+            # Force 4 swatches as absolute minimum
+            total_spacing = 4 * 3 + 4 * 4  # 3 gaps + 4 margins (updated)
+            available_for_swatches = available_width - total_spacing
+            swatch_width = max(35, available_for_swatches // 4)  # Absolute minimum
+            best_config = (4, swatch_width)
+        
+        swatch_count, swatch_width = best_config
+        
+        # Update settings
+        self.current_swatch_count = swatch_count
+        self.current_swatch_width = swatch_width
+        
+        # Update flowboxes with new settings
+        if hasattr(self, 'current_color_flowbox'):
+            self.current_color_flowbox.set_max_children_per_line(swatch_count)
+            # Reduce spacing to match window margins better
+            self.current_color_flowbox.set_column_spacing(4)
+            self.current_color_flowbox.set_row_spacing(4)
+            
+        if hasattr(self, 'preview_color_flowbox'):
+            self.preview_color_flowbox.set_max_children_per_line(swatch_count)
+            self.preview_color_flowbox.set_column_spacing(4)
+            self.preview_color_flowbox.set_row_spacing(4)
+        
+        print(f"Palette recalculated - Width: {width}px, Available: {available_width}px, Count: {swatch_count}, Swatch: {swatch_width}px")
+        
+        # Refresh existing colors
+        self.refresh_color_palettes()
+
+    def refresh_color_palettes(self):
+        """Refresh existing color palettes with current swatch settings"""
+        # Clear existing swatches
+        if hasattr(self, 'current_color_flowbox'):
+            child = self.current_color_flowbox.get_first_child()
+            while child:
+                next_child = child.get_next_sibling()
+                self.current_color_flowbox.remove(child)
+                child = next_child
+        
+        if hasattr(self, 'preview_color_flowbox'):
+            child = self.preview_color_flowbox.get_first_child()
+            while child:
+                next_child = child.get_next_sibling()
+                self.preview_color_flowbox.remove(child)
+                child = next_child
+        
+        # Recreate palettes if we have data
+        if hasattr(self, '_current_colors'):
+            colors_dict = {'colors': self._current_colors}
+            self.refresh_color_display(colors_dict)
+        if hasattr(self, '_preview_colors'):
+            colors_dict = {'colors': self._preview_colors}
+            self.refresh_preview_colors(colors_dict)
+
+    def _refresh_current_colors(self):
+        """Refresh current color display with new sizing"""
+        if hasattr(self, '_current_colors'):
+            colors = self._current_colors
+            # Clear and rebuild
+            child = self.current_color_flowbox.get_first_child()
+            while child:
+                next_child = child.get_next_sibling()
+                self.current_color_flowbox.remove(child)
+                child = next_child
+            
+            # Re-add colors with new sizing
+            for i, (color_key, color_value) in enumerate(colors.items()):
+                if i < self.current_swatch_count and color_key.startswith('color'):
+                    color_box = self.create_color_swatch(color_value, color_key)
+                    self.current_color_flowbox.append(color_box)
+
+    def _refresh_preview_colors(self):
+        """Refresh preview color display with new sizing"""
+        if hasattr(self, '_preview_colors'):
+            colors = self._preview_colors
+            # Clear and rebuild
+            child = self.preview_color_flowbox.get_first_child()
+            while child:
+                next_child = child.get_next_sibling()
+                self.preview_color_flowbox.remove(child)
+                child = next_child
+            
+            # Re-add colors with new sizing
+            for i, (color_key, color_value) in enumerate(colors.items()):
+                if i < self.current_swatch_count and color_key.startswith('color'):
+                    color_box = self.create_color_swatch(color_value, f"preview-{color_key}")
+                    self.preview_color_flowbox.append(color_box)
 
     def setup_ui(self):
         """Setup the main UI layout"""
@@ -1109,6 +1242,10 @@ class ThemeManagerWindow(Adw.ApplicationWindow):
 
     def setup_color_section(self, parent):
         """Setup color palette display section"""
+        # Initialize dynamic swatch settings
+        self.current_swatch_width = 80
+        self.current_swatch_count = 8
+        
         # Preview colors section (shown when wallpaper selected)
         self.preview_color_group = Adw.PreferencesGroup()
         self.preview_color_group.set_title("Preview Colors")
@@ -1118,9 +1255,13 @@ class ThemeManagerWindow(Adw.ApplicationWindow):
         
         # Preview color grid
         self.preview_color_flowbox = Gtk.FlowBox()
-        self.preview_color_flowbox.set_max_children_per_line(8)
+        self.preview_color_flowbox.set_max_children_per_line(self.current_swatch_count)
         self.preview_color_flowbox.set_selection_mode(Gtk.SelectionMode.NONE)
         self.preview_color_flowbox.set_margin_top(12)
+        # Enable homogeneous spacing for consistent layout
+        self.preview_color_flowbox.set_homogeneous(True)
+        self.preview_color_flowbox.set_row_spacing(4)  # Reduced from 8
+        self.preview_color_flowbox.set_column_spacing(4)  # Reduced from 8
         self.preview_color_group.add(self.preview_color_flowbox)
         
         # Apply preview colors button
@@ -1144,9 +1285,13 @@ class ThemeManagerWindow(Adw.ApplicationWindow):
         
         # Current color grid
         self.current_color_flowbox = Gtk.FlowBox()
-        self.current_color_flowbox.set_max_children_per_line(8)
+        self.current_color_flowbox.set_max_children_per_line(self.current_swatch_count)
         self.current_color_flowbox.set_selection_mode(Gtk.SelectionMode.NONE)
         self.current_color_flowbox.set_margin_top(12)
+        # Enable homogeneous spacing for consistent layout
+        self.current_color_flowbox.set_homogeneous(True)
+        self.current_color_flowbox.set_row_spacing(4)  # Reduced from 8
+        self.current_color_flowbox.set_column_spacing(4)  # Reduced from 8
         self.current_color_group.add(self.current_color_flowbox)
         
         # Action buttons row for current colors
@@ -1170,6 +1315,10 @@ class ThemeManagerWindow(Adw.ApplicationWindow):
         action_box.append(self.apply_theme_btn)
         
         self.current_color_group.add(action_box)
+        
+        # Initial sizing calculation will be done when needed
+        self.current_swatch_width = 80
+        self.current_swatch_count = 8
 
     def update_wallpaper_dir_display(self):
         """Update wallpaper directory display"""
@@ -1238,6 +1387,12 @@ class ThemeManagerWindow(Adw.ApplicationWindow):
 
     def refresh_color_display(self, colors):
         """Refresh the current color palette display"""
+        # Store colors for dynamic resizing
+        if colors and 'colors' in colors:
+            self._current_colors = colors['colors']
+        else:
+            self._current_colors = {}
+        
         # Clear existing colors
         child = self.current_color_flowbox.get_first_child()
         while child:
@@ -1253,9 +1408,10 @@ class ThemeManagerWindow(Adw.ApplicationWindow):
         self.current_color_group.set_description("Active theme colors from pywal")
         self.copy_colors_btn.set_sensitive(True)
         
-        # Add color swatches (limit to 8 colors)
+        # Add color swatches (limit to current swatch count)
         if 'colors' in colors:
-            for i in range(min(8, len(colors['colors']))):
+            swatch_count = getattr(self, 'current_swatch_count', 8)
+            for i in range(min(swatch_count, len(colors['colors']))):
                 color_key = f"color{i}"
                 if color_key in colors['colors']:
                     color_value = colors['colors'][color_key]
@@ -1264,6 +1420,12 @@ class ThemeManagerWindow(Adw.ApplicationWindow):
     
     def refresh_preview_colors(self, colors):
         """Refresh the preview color palette display"""
+        # Store colors for dynamic resizing
+        if colors and 'colors' in colors:
+            self._preview_colors = colors['colors']
+        else:
+            self._preview_colors = {}
+        
         # Clear existing colors
         child = self.preview_color_flowbox.get_first_child()
         while child:
@@ -1280,9 +1442,10 @@ class ThemeManagerWindow(Adw.ApplicationWindow):
         self.preview_color_group.set_description("Colors from selected wallpaper")
         self.apply_colors_btn.set_sensitive(True)
         
-        # Add color swatches (limit to 8 colors)
+        # Add color swatches (limit to current swatch count)
         if 'colors' in colors:
-            for i in range(min(8, len(colors['colors']))):
+            swatch_count = getattr(self, 'current_swatch_count', 8)
+            for i in range(min(swatch_count, len(colors['colors']))):
                 color_key = f"color{i}"
                 if color_key in colors['colors']:
                     color_value = colors['colors'][color_key]
@@ -1290,45 +1453,62 @@ class ThemeManagerWindow(Adw.ApplicationWindow):
                     self.preview_color_flowbox.append(color_box)
 
     def create_color_swatch(self, color_value, label):
-        """Create a color swatch widget"""
+        """Create a color swatch widget with dynamic sizing"""
         # Create clickable button for color swatch
         color_btn = Gtk.Button()
         color_btn.add_css_class("flat")
         color_btn.set_tooltip_text(f"Click to copy {color_value}")
         color_btn.connect("clicked", self.on_color_clicked, color_value)
         
-        color_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
-        color_box.set_margin_top(4)
-        color_box.set_margin_bottom(4)
-        color_box.set_margin_start(4)
-        color_box.set_margin_end(4)
+        color_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        color_box.set_margin_top(1)  # Reduced from 2
+        color_box.set_margin_bottom(1)  # Reduced from 2
+        color_box.set_margin_start(1)  # Reduced from 2
+        color_box.set_margin_end(1)  # Reduced from 2
         
-        # Color square - fixed size
+        # Use dynamic swatch width, with fallback
+        swatch_width = getattr(self, 'current_swatch_width', 80)
+        swatch_height = max(28, int(swatch_width * 0.5))  # Shorter proportional height
+        
+        # Color square - dynamic size based on window width
         color_frame = Gtk.Frame()
-        color_frame.set_size_request(50, 32)  # Smaller, consistent size
+        color_frame.set_size_request(swatch_width, swatch_height)
         
         color_area = Gtk.DrawingArea()
-        color_area.set_size_request(50, 32)
+        color_area.set_size_request(swatch_width, swatch_height)
         color_area.set_draw_func(self.draw_color_swatch, color_value)
         
         color_frame.set_child(color_area)
         color_box.append(color_frame)
         
-        # Color label - shorter
+        # Color label - adjust based on swatch width
         color_label = Gtk.Label()
         display_label = label.replace("preview-", "").replace("color", "")
         color_label.set_text(display_label)
         color_label.add_css_class("caption")
-        color_label.set_max_width_chars(4)
+        # Adjust max chars based on swatch width
+        max_chars = max(2, min(6, swatch_width // 15))
+        color_label.set_max_width_chars(max_chars)
         color_label.set_ellipsize(3)  # Ellipsize at end
         color_box.append(color_label)
         
-        # Value label - shorter
+        # Value label - adjust based on swatch width  
         value_label = Gtk.Label()
-        value_label.set_text(color_value[:7])  # Truncate long color values
+        # Show more or less of the color value based on width
+        if swatch_width > 90:
+            value_text = color_value  # Full color value
+            max_value_chars = 8
+        elif swatch_width > 65:
+            value_text = color_value[:7]  # Short hex
+            max_value_chars = 7
+        else:
+            value_text = color_value[:4]  # Very short
+            max_value_chars = 4
+            
+        value_label.set_text(value_text)
         value_label.add_css_class("caption")
         value_label.add_css_class("dim-label")
-        value_label.set_max_width_chars(7)
+        value_label.set_max_width_chars(max_value_chars)
         color_box.append(value_label)
         
         color_btn.set_child(color_box)

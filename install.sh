@@ -122,6 +122,14 @@ check_python() {
 }
 
 install_python_deps() {
+    local distro=$(detect_distro)
+    
+    # Skip pip installation on Arch since packages are available via pacman
+    if [[ "$distro" == "arch" ]]; then
+        print_status "On Arch Linux, Python packages installed via pacman, skipping pip..."
+        return 0
+    fi
+    
     print_status "Installing Python dependencies..."
     
     local packages=(
@@ -178,19 +186,21 @@ create_desktop_entry() {
     
     cat > "$DESKTOP_DIR/theme-manager-gtk.desktop" << EOF
 [Desktop Entry]
+Version=1.0
+Type=Application
 Name=Theme Manager GTK
-Comment=Manage Hyprland themes and wallpapers
+Comment=Manage Hyprland themes and wallpapers with GTK4/Libadwaita
 Exec=$CONFIG_DIR/theme-manager-gtk
 Icon=preferences-desktop-theme
 Terminal=false
-Type=Application
 Categories=Settings;DesktopSettings;GTK;
-Keywords=theme;wallpaper;hyprland;gtk;
+Keywords=theme;wallpaper;hyprland;gtk;pywal;colors;
 StartupNotify=true
+StartupWMClass=com.thememanager.gtk
 EOF
     
     chmod +x "$DESKTOP_DIR/theme-manager-gtk.desktop"
-    print_success "Desktop entry created"
+    print_success "Desktop entry created at: $DESKTOP_DIR/theme-manager-gtk.desktop"
 }
 
 verify_installation() {

@@ -36,12 +36,23 @@ optional_packages:
   arch:
     - hyprland
     - waybar
-    - rofi
+    - wofi
+    - mako
+    - kitty
+    - sway
+    - swww
+    - python-pywal
   ubuntu:
     - sway
     - waybar
-    - rofi
+    - wofi
+    - mako
+    - kitty
+    - pywal
   fedora:
     - sway
     - waybar
-    - rofi
+    - wofi
+    - mako
+    - kitty
+    - pywal

@@ -17,6 +17,7 @@ class ThemeManagerInstaller:
         self.home_dir = Path.home()
         self.config_dir = self.home_dir / ".config" / "Theme-Manager"
         self.desktop_dir = self.home_dir / ".local" / "share" / "applications"
+        self.distro = self.detect_distro()
         
     def detect_distro(self):
         """Detect the Linux distribution"""
@@ -92,8 +93,13 @@ class ThemeManagerInstaller:
             return False
     
     def install_python_packages(self, packages):
-        """Install Python packages using pip"""
+        """Install Python packages using pip (skip if available via system packages)"""
         print("🔧 Installing Python packages...")
+        
+        # Skip pip installation on Arch for packages available via pacman
+        if self.distro == 'arch':
+            print("ℹ️  On Arch Linux, Python packages installed via pacman, skipping pip...")
+            return True
         
         for package in packages:
             try:
@@ -125,6 +131,16 @@ class ThemeManagerInstaller:
     def copy_files(self):
         """Copy application files to config directory"""
         print("📋 Copying application files...")
+        
+        # Check if we're running from the target directory
+        if self.script_dir.resolve() == self.config_dir.resolve():
+            print("ℹ️  Running from target directory, skipping file copy...")
+            # Just ensure the launcher is executable
+            launcher = self.config_dir / 'theme-manager-gtk'
+            if launcher.exists():
+                launcher.chmod(0o755)
+                print("✅ Made launcher executable")
+            return True
         
         files_to_copy = [
             'main.py',
@@ -164,15 +180,17 @@ class ThemeManagerInstaller:
         print("🖥️  Installing desktop entry...")
         
         desktop_content = f"""[Desktop Entry]
+Version=1.0
+Type=Application
 Name=Theme Manager GTK
-Comment=Manage Hyprland themes and wallpapers
+Comment=Manage Hyprland themes and wallpapers with GTK4/Libadwaita
 Exec={self.config_dir}/theme-manager-gtk
 Icon=preferences-desktop-theme
 Terminal=false
-Type=Application
 Categories=Settings;DesktopSettings;GTK;
-Keywords=theme;wallpaper;hyprland;gtk;
+Keywords=theme;wallpaper;hyprland;gtk;pywal;colors;
 StartupNotify=true
+StartupWMClass=com.thememanager.gtk
 """
         
         desktop_file = self.desktop_dir / "theme-manager-gtk.desktop"
