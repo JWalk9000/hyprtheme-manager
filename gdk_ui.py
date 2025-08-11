@@ -1,1 +1,1 @@
-# GTK UI goes here.
+# GTK UI goes here. color variables will point to the style.css so that this app can easily be themed with itself.
