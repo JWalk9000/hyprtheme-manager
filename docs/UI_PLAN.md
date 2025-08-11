@@ -2,7 +2,7 @@
 
 ## Goals
 - Keep core logic UI-agnostic; expose services for any UI backend.
-- Provide a modern Libadwaita UX with responsive layout and clear workflows.
+- Provide a modern UX with responsive layout and clear workflows.
 - Make wallpaper → colors → theme application fast, transparent, and undo-friendly.
 
 ## Architecture Overview
@@ -30,8 +30,8 @@
 - Main Window (ThemeManagerWindow)
   - Header Bar
     - App title
-    - Primary actions: Apply Theme, Apply Colors, Apply Wallpaper
     - Menu: Preferences (Settings), Plugins, Download Wallpapers
+    - Exit Button
   - Content Layout (single page for MVP)
     1) Status Section (top)
        - Current wallpaper name
@@ -41,11 +41,12 @@
        - Directory row (shows active folder + choose button)
        - Grid of thumbnails (scrollable). At ≥600px, 3 columns; reflow responsively at larger widths
        - Cache progress bar (hidden unless active)
-       - Apply Wallpaper button
     3) Colors Section
-       - Preview Colors (hidden until wallpaper selected)
        - Current Colors (from pywal)
-       - Actions: Copy Colors, Apply Colors
+       - Preview Colors (shows all grey until new wallpaper is selected)
+       - Actions: Copy Palette (Colors)
+    4) Action Buttons
+       - Primary actions: Apply Theme, Apply Colors, Apply Wallpaper
 
 - Dialogs
   - Preferences (AppConfigWindow): wallpaper folder selection, UI backend, window behavior, debugging options (results dialog toggle).
@@ -54,7 +55,7 @@
   - Wallpaper Download (WallpaperDownloadWindow): curated repos (future real download).
 
 ## Data Flow and Services
-- Services container passed to UI
+- Servicespassed to UI
   - color_cache
     - `is_wallpaper_cached(name_or_path)`
     - `get_cached_colors(name_or_path)`

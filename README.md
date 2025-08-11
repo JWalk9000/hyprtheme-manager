@@ -1,34 +1,33 @@
 
 # Theme Manager
 
-Modern GTK4 theme manager with modular plugin system for Linux desktop environments.
+Modern theme manager with modular plugin system designed for Hyprland, may work for others.
 
 ## Features
 
 - **Modular Plugin System**: Add/remove application support dynamically
 - **Pywal Integration**: Automatic color extraction from wallpapers
-- **GTK4/Libadwaita UI**: Native Linux desktop experience
+- **GTK4 and QT UI**: Native Linux desktop experience
 - **Plugin Management**: Enable/disable application theming via GUI
-- **Wallpaper Downloads**: Built-in wallpaper repository access
+- **Future - Wallpaper Downloads**: Built-in wallpaper repository access
 
 ## Installation
 
 ```bash
-# Quick install (recommended)
+# Quick install (recommended), gives option for GTK or QT UI, rerun to change/add selection.
 python install.py
 
-# Manual install
-chmod +x theme-manager-gtk
-python install.py desktop
-```
 
 ## Usage
 
 ```bash
-# Launch application
-./theme-manager-gtk
+# Launch application with GTK UI
+./theme-manager -g
 
-# From application menu
+# Launch application with QT UI
+./theme-manager -q
+
+# From application launcher
 Search for "Theme Manager"
 ```
 
@@ -37,7 +36,7 @@ Search for "Theme Manager"
 Access plugin management via **Settings → Configure Apps**:
 - Enable/disable application theming
 - View available plugins
-- Create new plugins with included generator
+- Future - Create new plugins with included generator
 
 ### Supported Applications
 
@@ -49,35 +48,17 @@ Access plugin management via **Settings → Configure Apps**:
 
 ## Plugin Development
 
-Create new plugins using the generator:
+Create new plugins using the interactive generator:
 ```bash
 python create_plugin.py my_app
 ```
 
 This creates `plugins/my_app_plugin.py` with the required structure.
 
-## File Structure
-
-```
-Theme-Manager/
-├── main.py                    # Main application
-├── plugin_manager.py          # Plugin system core
-├── plugins/                   # Application plugins
-│   ├── waybar_plugin.py
-│   ├── kitty_plugin.py
-│   ├── wofi_plugin.py
-│   ├── mako_plugin.py
-│   └── gtk_plugin.py
-├── config/templates/          # Theme templates
-├── create_plugin.py           # Plugin generator
-├── theme-manager-gtk          # Launcher
-└── install.py                 # Installer
-```
-
 ## Configuration
 
 Plugin settings: **Settings → Configure Apps**
-Wallpaper directory: `~/Pictures/wallpapers`
+Defaut Wallpaper directory: `~/Pictures/wallpapers`
 
 ## Troubleshooting
 
