@@ -2,57 +2,14 @@ system_packages:
   arch:
     - gtk4
     - libadwaita
+    - qt6ct
+    - qt5ct
     - python
+    - python-pyqt5
+    - python-pyqt6
+    - python-pywal
     - python-gobject
     - python-yaml
     - python-requests
     - python-pillow
     - glib2
-  ubuntu:
-    - libgtk-4-1
-    - libadwaita-1-0
-    - python3
-    - python3-gi
-    - python3-yaml
-    - python3-requests
-    - python3-pil
-    - glib2.0-bin
-  fedora:
-    - gtk4
-    - libadwaita
-    - python3
-    - python3-gobject
-    - python3-PyYAML
-    - python3-requests
-    - python3-pillow
-    - glib2
-
-python_packages:
-  - PyYAML>=6.0
-  - requests>=2.25.0
-  - Pillow>=8.0.0
-
-optional_packages:
-  arch:
-    - hyprland
-    - waybar
-    - wofi
-    - mako
-    - kitty
-    - sway
-    - swww
-    - python-pywal
-  ubuntu:
-    - sway
-    - waybar
-    - wofi
-    - mako
-    - kitty
-    - pywal
-  fedora:
-    - sway
-    - waybar
-    - wofi
-    - mako
-    - kitty
-    - pywal

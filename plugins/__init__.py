@@ -1,1 +1,0 @@
-# Theme Manager Plugins Directory
