@@ -36,7 +36,7 @@
     1) Status Section (top)
        - Current wallpaper name
        - Current theme status (active/inactive)
-       - Plugins enabled count
+       - Plugins enabled count and list
     2) Wallpaper Section
        - Directory row (shows active folder + choose button)
        - Grid of thumbnails (scrollable). At ≥600px, 3 columns; reflow responsively at larger widths

@@ -16,7 +16,7 @@ Modern theme manager with modular plugin system designed for Hyprland, may work 
 ```bash
 # Quick install (recommended), gives option for GTK or QT UI, rerun to change/add selection.
 python install.py
-
+```
 
 ## Usage
 
@@ -46,7 +46,7 @@ Access plugin management via **Settings → Configure Apps**:
 - **Mako**: Notification theming
 - **GTK**: System theme integration
 
-## Plugin Development
+## Plugin Development - future plans
 
 Create new plugins using the interactive generator:
 ```bash
