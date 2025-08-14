@@ -1,1 +1,7 @@
 Theme-Manager.code-workspace
+theme-manager
+__pycache__/
+*.pyc
+*.pyo
+applied_colors.json
+wallpaper-cache.yaml
