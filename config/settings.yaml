@@ -1,1 +1,11 @@
-# All app settings will be stored and loaded from this file, manual changes take effect after restarting the app, in-app changes will be reflected immediately and over write any manual changes.
+theme:
+  show_results_dialog: true
+ui:
+  backend: gtk
+  floating_window: true
+  window_height: 600
+  window_width: 800
+  show_all_colors: true
+wallpaper:
+  directory: ~/Pictures/Wallpapers
+  live_preview: true

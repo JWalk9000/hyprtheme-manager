@@ -39,7 +39,7 @@
        - Plugins enabled count and list
     2) Wallpaper Section
        - Directory row (shows active folder + choose button)
-       - Grid of thumbnails (scrollable). At ≥600px, 3 columns; reflow responsively at larger widths
+       - Scrollable Grid of thumbnails (scrollable). At ≥600px, 3 columns; reflow responsively at larger widths
        - Cache progress bar (hidden unless active)
     3) Colors Section
        - Current Colors (from pywal)
