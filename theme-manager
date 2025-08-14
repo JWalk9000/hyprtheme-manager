@@ -1,3 +1,0 @@
-#!/bin/bash
-cd "/home/zeus/.config/Theme-Manager"
-python3 main.py "$@"
