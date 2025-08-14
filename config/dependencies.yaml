@@ -2,14 +2,10 @@ system_packages:
   arch:
     - gtk4
     - libadwaita
-    - qt6ct
-    - qt5ct
     - python
-    - python-pyqt5
     - python-pyqt6
-    - python-pywal
     - python-gobject
     - python-yaml
     - python-requests
     - python-pillow
-    - glib2
+    - python-pywal

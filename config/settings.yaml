@@ -23,7 +23,7 @@ managed_apps:
 theme:
   show_results_dialog: true
 ui:
-  backend: qt
+  backend: gtk
   floating_window: true
   show_all_colors: false
   window_height: 600
