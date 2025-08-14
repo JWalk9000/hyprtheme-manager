@@ -169,6 +169,22 @@ class ColorManager:
         """
         return self.applied_colors.copy()
 
+    def load_applied_colors_as_current(self) -> bool:
+        """
+        Load the applied system colors as current colors for UI theming.
+        This ensures UIs use the actually applied colors, not preview colors.
+        
+        Returns:
+            True if applied colors were loaded, False if using defaults
+        """
+        if self.applied_colors:
+            self.current_colors = self.applied_colors.copy()
+            print(f"Loaded {len(self.applied_colors)} applied colors as current colors")
+            return True
+        else:
+            # Fallback to pywal colors if no applied colors exist
+            return self.load_pywal_colors()
+
     def get_color(self, color_key: str) -> str:
         """Get a specific color by key (e.g., 'color0', 'color1')."""
         return self.current_colors.get(color_key, '#000000')

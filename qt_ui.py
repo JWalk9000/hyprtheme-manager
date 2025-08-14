@@ -8,7 +8,8 @@ import sys
 import json
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, 
                              QWidget, QLabel, QPushButton, QFrame, QScrollArea,
-                             QGridLayout)
+                             QGridLayout, QMenuBar, QDialog, QDialogButtonBox,
+                             QCheckBox, QFileDialog, QComboBox, QFormLayout)
 from PyQt6.QtCore import Qt
 
 from app_settings import AppSettings
@@ -37,19 +38,16 @@ class ThemeManagerWindow(QMainWindow):
         self.check_wallpaper_directory()
 
     def apply_colors(self):
-        """Apply the current color theme to this window."""
-        # Load pywal colors if available, otherwise use defaults
-        color_manager.load_pywal_colors()
-        
-        # Apply colors to the Qt application
+        """Apply current color scheme to the application"""
+        # Load applied colors (not preview colors) for UI theming
+        color_manager.load_applied_colors_as_current()
         color_manager.apply_colors_to_qt_app(QApplication.instance())
-        
-        # Apply wallpaper grid styling with current colors
-        if hasattr(self, 'wallpaper_scroll'):
-            self.apply_wallpaper_grid_styling()
 
     def setup_ui(self):
         """Initializes the UI components according to the UI plan."""
+        # Create menu bar
+        self.setup_menu_bar()
+        
         # Central widget and main layout
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -59,49 +57,52 @@ class ThemeManagerWindow(QMainWindow):
         main_layout.setSpacing(16)
 
         # --- Status Section ---
-        status_frame = QFrame()
-        status_frame.setFrameStyle(QFrame.Shape.StyledPanel)
-        status_layout = QVBoxLayout(status_frame)
+        self.status_frame = QFrame()
+        self.status_frame.setFrameStyle(QFrame.Shape.StyledPanel)
+        status_layout = QVBoxLayout(self.status_frame)
         status_layout.setContentsMargins(8, 8, 8, 8)
         status_layout.setSpacing(8)
         
         status_title = QLabel("Status")
-        status_title.setStyleSheet("font-weight: bold;")
+        status_title.setStyleSheet("font-weight: bold; border: none; background: transparent;")
         status_layout.addWidget(status_title)
         
         self.current_wallpaper_label = QLabel("Current Wallpaper: None")
         self.current_wallpaper_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        self.current_wallpaper_label.setStyleSheet("border: none; background: transparent;")
         status_layout.addWidget(self.current_wallpaper_label)
         
         # Current palette will be added dynamically in update_status_display
         
-        main_layout.addWidget(status_frame)
+        main_layout.addWidget(self.status_frame)
 
         # --- Wallpaper Selection Section ---
-        wallpaper_frame = QFrame()
-        wallpaper_frame.setFrameStyle(QFrame.Shape.StyledPanel)
-        wallpaper_layout = QVBoxLayout(wallpaper_frame)
+        self.wallpaper_frame = QFrame()
+        self.wallpaper_frame.setFrameStyle(QFrame.Shape.StyledPanel)
+        wallpaper_layout = QVBoxLayout(self.wallpaper_frame)
         wallpaper_layout.setContentsMargins(8, 8, 8, 8)
         wallpaper_layout.setSpacing(8)
         
         wallpaper_title = QLabel("Wallpaper Selection")
-        wallpaper_title.setStyleSheet("font-weight: bold;")
+        wallpaper_title.setStyleSheet("font-weight: bold; border: none; background: transparent;")
         wallpaper_layout.addWidget(wallpaper_title)
 
-        # Folder selection row
+        # Folder selection row - switch button and label positions
         folder_row = QHBoxLayout()
         folder_label = QLabel("Folder:")
         folder_label.setMinimumWidth(60)
+        folder_label.setStyleSheet("border: none; background: transparent;")
+        
+        # Show current folder first
+        self.folder_path_label = QLabel(str(self.wallpaper_manager.wallpaper_dir))
+        self.folder_path_label.setStyleSheet("color: gray; border: none; background: transparent;")
+        
         self.folder_button = QPushButton("Choose Folder...")
         self.folder_button.clicked.connect(self.on_folder_button_clicked)
         
-        # Show current folder
-        self.folder_path_label = QLabel(str(self.wallpaper_manager.wallpaper_dir))
-        self.folder_path_label.setStyleSheet("color: gray;")
-        
         folder_row.addWidget(folder_label)
-        folder_row.addWidget(self.folder_button)
         folder_row.addWidget(self.folder_path_label)
+        folder_row.addWidget(self.folder_button)
         folder_row.addStretch()
         wallpaper_layout.addLayout(folder_row)
 
@@ -128,26 +129,28 @@ class ThemeManagerWindow(QMainWindow):
         grid_scroll.setWidget(self.grid_widget)
         wallpaper_layout.addWidget(grid_scroll)
         
-        main_layout.addWidget(wallpaper_frame)
+        main_layout.addWidget(self.wallpaper_frame)
 
         # --- Color Preview Section ---
-        color_frame = QFrame()
-        color_frame.setFrameStyle(QFrame.Shape.StyledPanel)
-        color_layout = QVBoxLayout(color_frame)
+        self.color_frame = QFrame()
+        self.color_frame.setFrameStyle(QFrame.Shape.StyledPanel)
+        color_layout = QVBoxLayout(self.color_frame)
         color_layout.setContentsMargins(8, 8, 8, 8)
         color_layout.setSpacing(8)
 
         color_title = QLabel("Color Preview")
-        color_title.setStyleSheet("font-weight: bold;")
+        color_title.setStyleSheet("font-weight: bold; border: none; background: transparent;")
         color_layout.addWidget(color_title)
 
         self.color_preview_label = QLabel("Select a wallpaper to preview colors")
         self.color_preview_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        self.color_preview_label.setStyleSheet("border: none; background: transparent;")
         color_layout.addWidget(self.color_preview_label)
 
         # Color display toggle
         color_toggle_layout = QHBoxLayout()
         color_toggle_label = QLabel("Colors:")
+        color_toggle_label.setStyleSheet("border: none; background: transparent;")
         color_toggle_layout.addWidget(color_toggle_label)
         
         self.color_count_toggle = QPushButton("Show 16 Colors")
@@ -161,11 +164,19 @@ class ThemeManagerWindow(QMainWindow):
         # Color swatches - show actual colors from color manager
         # Create a container that can hold multiple rows
         self.color_swatches_container = QVBoxLayout()
-        self.show_16_colors = False  # Start with 8 colors
+        self.show_16_colors = self.settings.get('ui.show_all_colors', False)  # Load from settings
+        
+        # Set initial toggle state and text to match settings
+        self.color_count_toggle.setChecked(self.show_16_colors)
+        if self.show_16_colors:
+            self.color_count_toggle.setText("Show 8 Colors")
+        else:
+            self.color_count_toggle.setText("Show 16 Colors")
+            
         self.update_color_swatches()
         color_layout.addLayout(self.color_swatches_container)
         
-        main_layout.addWidget(color_frame)
+        main_layout.addWidget(self.color_frame)
 
         # --- Action Buttons ---
         button_layout = QHBoxLayout()
@@ -184,7 +195,7 @@ class ThemeManagerWindow(QMainWindow):
         self.apply_both_btn = QPushButton("Apply Both")
         self.apply_both_btn.setEnabled(False)
         self.apply_both_btn.clicked.connect(self.on_apply_both_clicked)
-        self.apply_both_btn.setStyleSheet("QPushButton { background-color: #0066cc; color: white; font-weight: bold; }")
+        self.apply_both_btn.setStyleSheet("QPushButton { background-color: #0066cc; color: white; font-weight: bold; border-radius: 6px; }")
         button_layout.addWidget(self.apply_both_btn)
         
         # Add Copy Palette button
@@ -198,7 +209,33 @@ class ThemeManagerWindow(QMainWindow):
         # Apply initial wallpaper grid styling
         self.apply_wallpaper_grid_styling()
 
+        # Apply button styling now that all buttons are created
+        self.apply_button_styling()
+
+        # Apply frame styling for rounded corners
+        self.apply_frame_styling()
+
         print("ThemeManagerWindow (Qt) UI skeleton complete.")
+
+    def setup_menu_bar(self):
+        """Setup the menu bar with Settings and Exit options."""
+        menubar = self.menuBar()
+        
+        # Apply styling to match the app theme
+        self.apply_menubar_styling()
+        
+        # File menu
+        file_menu = menubar.addMenu('&File')
+        
+        # Settings action
+        settings_action = file_menu.addAction('&Settings...')
+        settings_action.triggered.connect(self.show_settings_dialog)
+        
+        file_menu.addSeparator()
+        
+        # Exit action
+        exit_action = file_menu.addAction('&Exit')
+        exit_action.triggered.connect(self.close)
 
     def on_color_count_toggled(self):
         """Handle the color count toggle button."""
@@ -207,6 +244,11 @@ class ThemeManagerWindow(QMainWindow):
             self.color_count_toggle.setText("Show 8 Colors")
         else:
             self.color_count_toggle.setText("Show 16 Colors")
+        
+        # Save the setting
+        self.settings.set('ui.show_all_colors', self.show_16_colors)
+        self.settings.save_settings()
+        
         self.update_color_swatches()
 
     def update_color_swatches(self):
@@ -242,7 +284,7 @@ class ThemeManagerWindow(QMainWindow):
                 
                 swatch = QWidget()
                 swatch.setFixedSize(56, 56)  # 40% larger than 40x40
-                swatch.setStyleSheet(f"background-color: {color_value}; border: 1px solid #333333;")
+                swatch.setStyleSheet(f"background-color: {color_value}; border: 1px solid #333333; border-radius: 4px;")
                 
                 # Add click handler for copying color - fix closure issue
                 def make_click_handler(color_hex, color_index):
@@ -297,7 +339,7 @@ class ThemeManagerWindow(QMainWindow):
                     # Create small square swatch (font height size)
                     swatch = QWidget()
                     swatch.setFixedSize(16, 16)  # Small square, approximately font height
-                    swatch.setStyleSheet(f"background-color: {color_value}; border: 0.5px solid #4a4a4a;")
+                    swatch.setStyleSheet(f"background-color: {color_value}; border: 0.5px solid #4a4a4a; border-radius: 2px;")
                     palette_layout.addWidget(swatch)
             
             palette_layout.addStretch()
@@ -363,9 +405,18 @@ class ThemeManagerWindow(QMainWindow):
         )
         
         if folder_path:
-            if self.wallpaper_manager.ensure_wallpaper_directory(folder_path):
-                self.folder_path_label.setText(str(self.wallpaper_manager.wallpaper_dir))
-                self.load_wallpapers()
+            # Use the same pattern as color toggle - save setting and refresh
+            self.settings.set('wallpaper.directory', folder_path)
+            self.settings.save_settings()
+            
+            # Update wallpaper manager to use new directory
+            self.wallpaper_manager.set_wallpaper_directory(folder_path)
+            
+            # Update display label
+            self.folder_path_label.setText(str(self.wallpaper_manager.wallpaper_dir))
+            
+            # Refresh using same method as color toggle (which calls update_color_swatches)
+            self.load_wallpapers()
 
     def load_wallpapers(self):
         """Load wallpapers into the grid."""
@@ -406,9 +457,13 @@ class ThemeManagerWindow(QMainWindow):
         from PyQt6.QtWidgets import QVBoxLayout, QSizePolicy
         from PyQt6.QtGui import QPixmap
         
+        # Get theme colors for consistent styling
+        fg_color = color_manager.get_color('color7') or '#ffffff'
+        border_color = color_manager.get_color('color8') or '#404040'
+        
         container = QWidget()
         container.setFixedSize(150, 120)
-        container.setStyleSheet("border: 2px solid transparent; background-color: #f0f0f0;")
+        container.setStyleSheet("border: none; background-color: transparent;")
         container.wallpaper_path = wallpaper_path
         
         # Ensure the container doesn't get resized
@@ -434,13 +489,13 @@ class ThemeManagerWindow(QMainWindow):
                     image_label.setPixmap(scaled_pixmap)
                     image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
                     image_label.setMinimumSize(140, 90)
-                    image_label.setStyleSheet("border: 1px solid #ccc;")
+                    image_label.setStyleSheet(f"border: 1px solid {border_color}; border-radius: 6px;")
                     layout.addWidget(image_label)
                     
-                    # Add filename label
+                    # Add filename label with theme color
                     name_label = QLabel(wallpaper_path.stem[:20])
                     name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-                    name_label.setStyleSheet("color: #333; font-size: 10px;")
+                    name_label.setStyleSheet(f"color: {fg_color}; font-size: 10px; border: none; background: transparent;")
                     name_label.setWordWrap(True)
                     layout.addWidget(name_label)
                 else:
@@ -450,20 +505,20 @@ class ThemeManagerWindow(QMainWindow):
                 # Fallback to label
                 fallback = QLabel("Image\nError")
                 fallback.setAlignment(Qt.AlignmentFlag.AlignCenter)
-                fallback.setStyleSheet("color: gray; border: 1px solid #ccc;")
+                fallback.setStyleSheet(f"color: {fg_color}; border: 1px solid {border_color}; border-radius: 6px;")
                 fallback.setMinimumSize(140, 90)
                 layout.addWidget(fallback)
                 
                 # Add filename
                 name_label = QLabel(wallpaper_path.stem[:20])
                 name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-                name_label.setStyleSheet("color: #333; font-size: 10px;")
+                name_label.setStyleSheet(f"color: {fg_color}; font-size: 10px; border: none; background: transparent;")
                 layout.addWidget(name_label)
         else:
             # Fallback to filename label only
             fallback = QLabel(f"Loading...\n{wallpaper_path.stem[:15]}")
             fallback.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            fallback.setStyleSheet("color: gray; border: 1px solid #ccc;")
+            fallback.setStyleSheet(f"color: {fg_color}; border: 1px solid {border_color}; border-radius: 6px;")
             fallback.setMinimumSize(140, 100)
             fallback.setWordWrap(True)
             layout.addWidget(fallback)
@@ -490,9 +545,9 @@ class ThemeManagerWindow(QMainWindow):
             widget = self.wallpaper_grid.itemAt(i).widget()
             if hasattr(widget, 'wallpaper_path'):
                 if widget.wallpaper_path == wallpaper_path:
-                    widget.setStyleSheet("border: 2px solid blue;")
+                    widget.setStyleSheet("border: 2px solid blue; border-radius: 6px;")
                 else:
-                    widget.setStyleSheet("border: 2px solid transparent;")
+                    widget.setStyleSheet("border: 2px solid transparent; border-radius: 6px;")
         
         # Generate colors in background
         self.generate_colors_from_wallpaper(wallpaper_path)
@@ -529,28 +584,63 @@ class ThemeManagerWindow(QMainWindow):
     
     def refresh_colors(self):
         """Refresh the color theme and update all color displays."""
-        # Apply new colors to the application
-        color_manager.apply_colors_to_qt_app(QApplication.instance())
+        # Save current scroll position
+        scroll_bar = self.wallpaper_scroll.verticalScrollBar()
+        scroll_position = scroll_bar.value()
         
-        # Update the color swatches
-        self.update_color_swatches()
-        
-        # Update the preview label
-        self.color_preview_label.setText("Colors updated from current selection")
-
-    def refresh_colors(self):
-        """Refresh the color theme and update all color displays."""
         # Apply new colors to the application
         color_manager.apply_colors_to_qt_app(QApplication.instance())
         
         # Update wallpaper grid background
         self.apply_wallpaper_grid_styling()
         
+        # Update menubar styling
+        self.apply_menubar_styling()
+        
+        # Update button styling
+        self.apply_button_styling()
+        
+        # Update frame styling
+        self.apply_frame_styling()
+        
         # Update the color swatches
         self.update_color_swatches()
         
+        # Update wallpaper styling without full reload
+        self.update_wallpaper_styling()
+        
+        # Restore scroll position
+        scroll_bar.setValue(scroll_position)
+        
         # Update the preview label
         self.color_preview_label.setText("Colors updated from current selection")
+
+    def update_wallpaper_styling(self):
+        """Update the styling of existing wallpaper widgets without recreating them."""
+        colors = color_manager.get_all_colors()
+        fg_color = colors.get('color15', '#ffffff')
+        border_color = colors.get('color8', '#404040')
+        
+        # Update styling for all existing wallpaper widgets
+        for i in range(self.wallpaper_grid.count()):
+            item = self.wallpaper_grid.itemAt(i)
+            if item and item.widget():
+                container = item.widget()
+                # Update the filename label styling if it exists
+                layout = container.layout()
+                if layout and layout.count() > 1:
+                    name_label = layout.itemAt(1).widget()
+                    if hasattr(name_label, 'setText'):  # It's a label
+                        name_label.setStyleSheet(f"color: {fg_color}; font-size: 10px; border: none; background: transparent;")
+                
+                # Update container border for unselected items (selected ones keep blue border)
+                if hasattr(container, 'wallpaper_path'):
+                    if hasattr(self, 'selected_wallpaper') and container.wallpaper_path == self.selected_wallpaper:
+                        # Keep the blue selection border
+                        container.setStyleSheet("border: 2px solid blue; border-radius: 6px;")
+                    else:
+                        # Update to current theme border
+                        container.setStyleSheet("border: 2px solid transparent; border-radius: 6px;")
 
     def apply_wallpaper_grid_styling(self):
         """Apply background styling to the wallpaper grid using current palette colors."""
@@ -585,6 +675,114 @@ class ThemeManagerWindow(QMainWindow):
                 }}
             """
             self.wallpaper_scroll.setStyleSheet(stylesheet)
+
+    def apply_menubar_styling(self):
+        """Apply styling to the menu bar to match the current theme."""
+        if hasattr(self, 'menuBar'):
+            # Use theme colors for menu bar
+            bg_color = color_manager.get_color('color0') or '#2b2b2b'
+            fg_color = color_manager.get_color('color7') or '#ffffff'
+            accent_color = color_manager.get_color('color1') or '#666666'
+            
+            menubar_style = f"""
+                QMenuBar {{
+                    background-color: {bg_color};
+                    color: {fg_color};
+                    border: none;
+                    padding: 2px;
+                }}
+                QMenuBar::item {{
+                    background-color: transparent;
+                    color: {fg_color};
+                    padding: 4px 8px;
+                    margin: 1px;
+                }}
+                QMenuBar::item:selected {{
+                    background-color: {accent_color};
+                    color: {fg_color};
+                }}
+                QMenuBar::item:pressed {{
+                    background-color: {accent_color};
+                }}
+                QMenu {{
+                    background-color: {bg_color};
+                    color: {fg_color};
+                    border: 1px solid {color_manager.get_color('color8') or '#404040'};
+                }}
+                QMenu::item {{
+                    background-color: transparent;
+                    color: {fg_color};
+                    padding: 6px 16px;
+                }}
+                QMenu::item:selected {{
+                    background-color: {accent_color};
+                    color: {fg_color};
+                }}
+                QMenu::separator {{
+                    height: 1px;
+                    background-color: {color_manager.get_color('color8') or '#404040'};
+                    margin: 2px 0px;
+                }}
+            """
+            self.menuBar().setStyleSheet(menubar_style)
+
+    def apply_button_styling(self):
+        """Apply border radius and styling to all buttons for modern GTK-like appearance."""
+        colors = color_manager.get_all_colors()
+        bg_color = colors.get('color0', '#1a1a1a')
+        fg_color = colors.get('color15', '#ffffff')
+        accent_color = colors.get('color4', '#5555ff')
+        border_color = colors.get('color8', '#404040')
+        
+        button_style = f"""
+            QPushButton {{
+                border-radius: 6px;
+                padding: 8px 16px;
+                border: 1px solid {border_color};
+                background-color: {bg_color};
+                color: {fg_color};
+            }}
+            QPushButton:hover {{
+                background-color: {accent_color};
+                border-color: {accent_color};
+            }}
+            QPushButton:pressed {{
+                background-color: {border_color};
+            }}
+            QPushButton:disabled {{
+                background-color: {border_color};
+                color: {colors.get('color8', '#808080')};
+                border-color: {border_color};
+            }}
+        """
+        
+        # Apply to specific buttons that don't have custom styling
+        for button in [self.folder_button, self.color_count_toggle, 
+                      self.apply_wallpaper_btn, self.apply_colors_btn, 
+                      self.copy_palette_btn]:
+            if button:
+                button.setStyleSheet(button_style)
+
+    def apply_frame_styling(self):
+        """Apply rounded corner styling to section frames for modern appearance."""
+        colors = color_manager.get_all_colors()
+        bg_color = colors.get('color0', '#1a1a1a')
+        border_color = colors.get('color8', '#404040')
+        
+        frame_style = f"""
+            QFrame {{
+                background-color: {bg_color};
+                border: 1px solid {border_color};
+                border-radius: 8px;
+                padding: 4px;
+            }}
+        """
+        
+        # Apply to main section frames
+        for frame_attr in ['status_frame', 'wallpaper_frame', 'color_frame']:
+            if hasattr(self, frame_attr):
+                frame = getattr(self, frame_attr)
+                frame.setStyleSheet(frame_style)
 
     def on_apply_wallpaper_clicked(self):
         """Handle wallpaper apply button click."""
@@ -728,6 +926,15 @@ Individual Colors:
         """Show a brief message to the user."""
         print(message)  # For now, just print - could be enhanced with status bar
 
+    def show_settings_dialog(self):
+        """Show the settings/preferences dialog."""
+        dialog = SettingsDialog(self.settings, self)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            # Settings were saved, refresh the UI
+            self.check_wallpaper_directory()
+            self.load_wallpapers()
+            print("Settings updated successfully")
+
     def copy_color_to_clipboard(self, color_hex):
         """Copy a single color to clipboard."""
         try:
@@ -765,6 +972,249 @@ Individual Colors:
             print("Full palette copied to clipboard!")
         except Exception as e:
             print(f"Error copying palette: {e}")
+
+
+class SettingsDialog(QDialog):
+    """Settings/Preferences dialog for Theme Manager."""
+    
+    def __init__(self, settings: AppSettings, parent=None):
+        super().__init__(parent)
+        self.settings = settings
+        self.setWindowTitle("Theme Manager Settings")
+        self.setModal(True)
+        self.setFixedSize(500, 600)
+        
+        # Keep on top of parent window
+        self.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint)
+        
+        self.setup_ui()
+        self.load_current_settings()
+        self.apply_settings_dialog_styling()
+    
+    def apply_settings_dialog_styling(self):
+        """Apply the current theme colors to the settings dialog."""
+        # Use theme colors for the dialog
+        bg_color = color_manager.get_color('color0') or '#2b2b2b'
+        fg_color = color_manager.get_color('color7') or '#ffffff'
+        accent_color = color_manager.get_color('color1') or '#666666'
+        border_color = color_manager.get_color('color8') or '#404040'
+        
+        dialog_style = f"""
+            QDialog {{
+                background-color: {bg_color};
+                color: {fg_color};
+            }}
+            QLabel {{
+                color: {fg_color};
+                background-color: transparent;
+            }}
+            QFrame {{
+                background-color: {bg_color};
+                border: 1px solid {border_color};
+                border-radius: 4px;
+            }}
+            QComboBox {{
+                background-color: {bg_color};
+                color: {fg_color};
+                border: 1px solid {border_color};
+                padding: 4px;
+            }}
+            QComboBox::drop-down {{
+                border: none;
+                background-color: {border_color};
+            }}
+            QComboBox::down-arrow {{
+                border: none;
+            }}
+            QCheckBox {{
+                color: {fg_color};
+                background-color: transparent;
+            }}
+            QCheckBox::indicator {{
+                border: 1px solid {border_color};
+                background-color: {bg_color};
+            }}
+            QCheckBox::indicator:checked {{
+                background-color: {accent_color};
+            }}
+            QPushButton {{
+                background-color: {border_color};
+                color: {fg_color};
+                border: 1px solid {border_color};
+                padding: 6px 12px;
+                border-radius: 4px;
+            }}
+            QPushButton:hover {{
+                background-color: {accent_color};
+            }}
+            QDialogButtonBox QPushButton {{
+                background-color: {border_color};
+                color: {fg_color};
+                border: 1px solid {border_color};
+                padding: 6px 16px;
+                border-radius: 4px;
+                min-width: 60px;
+            }}
+            QDialogButtonBox QPushButton:hover {{
+                background-color: {accent_color};
+            }}
+        """
+        self.setStyleSheet(dialog_style)
+    
+    def setup_ui(self):
+        """Setup the settings dialog UI."""
+        layout = QVBoxLayout(self)
+        
+        # Create form layout for settings
+        form_layout = QFormLayout()
+        
+        # Wallpaper Directory
+        wallpaper_layout = QHBoxLayout()
+        self.wallpaper_dir_label = QLabel()
+        wallpaper_browse_btn = QPushButton("Browse...")
+        wallpaper_browse_btn.clicked.connect(self.browse_wallpaper_directory)
+        wallpaper_layout.addWidget(self.wallpaper_dir_label)
+        wallpaper_layout.addWidget(wallpaper_browse_btn)
+        form_layout.addRow("Wallpaper Directory:", wallpaper_layout)
+        
+        # UI Backend
+        self.ui_backend_combo = QComboBox()
+        self.ui_backend_combo.addItems(["gtk", "qt"])
+        form_layout.addRow("UI Backend:", self.ui_backend_combo)
+        
+        # Window Options
+        self.floating_window_check = QCheckBox("Floating Window")
+        form_layout.addRow("Window Behavior:", self.floating_window_check)
+        
+        self.show_results_dialog_check = QCheckBox("Show Results Dialog")
+        form_layout.addRow("Theme Application:", self.show_results_dialog_check)
+        
+        self.show_all_colors_check = QCheckBox("Show 16 Colors (vs 8)")
+        self.show_all_colors_check.toggled.connect(self.on_show_all_colors_changed)
+        form_layout.addRow("Color Display:", self.show_all_colors_check)
+        
+        self.live_preview_check = QCheckBox("Live Preview")
+        form_layout.addRow("Wallpaper Preview:", self.live_preview_check)
+        
+        layout.addLayout(form_layout)
+        
+        # Managed Apps section
+        apps_frame = QFrame()
+        apps_frame.setFrameStyle(QFrame.Shape.StyledPanel)
+        apps_layout = QVBoxLayout(apps_frame)
+        
+        apps_title = QLabel("Managed Applications")
+        apps_title.setStyleSheet("font-weight: bold; font-size: 14px;")
+        apps_layout.addWidget(apps_title)
+        
+        # Create checkboxes for each managed app
+        self.app_checkboxes = {}
+        managed_apps = self.settings.get('managed_apps', {})
+        
+        for app_name, app_config in managed_apps.items():
+            checkbox = QCheckBox(f"{app_name.title()} ({app_config.get('location', 'Unknown')})")
+            checkbox.setChecked(app_config.get('enabled', True))
+            self.app_checkboxes[app_name] = checkbox
+            apps_layout.addWidget(checkbox)
+        
+        layout.addWidget(apps_frame)
+        
+        # Dialog buttons
+        button_box = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | 
+            QDialogButtonBox.StandardButton.Cancel
+        )
+        button_box.accepted.connect(self.save_settings)
+        button_box.rejected.connect(self.reject)
+        layout.addWidget(button_box)
+    
+    def load_current_settings(self):
+        """Load current settings into the form."""
+        # Wallpaper directory
+        wallpaper_dir = self.settings.get('wallpaper.directory', '~/Pictures/Wallpapers')
+        self.wallpaper_dir_label.setText(str(wallpaper_dir))
+        
+        # UI Backend
+        backend = self.settings.get('ui.backend', 'gtk')
+        index = self.ui_backend_combo.findText(backend)
+        if index >= 0:
+            self.ui_backend_combo.setCurrentIndex(index)
+        
+        # Checkboxes
+        self.floating_window_check.setChecked(self.settings.get('ui.floating_window', True))
+        self.show_results_dialog_check.setChecked(self.settings.get('theme.show_results_dialog', True))
+        self.show_all_colors_check.setChecked(self.settings.get('ui.show_all_colors', True))
+        self.live_preview_check.setChecked(self.settings.get('wallpaper.live_preview', True))
+    
+    def browse_wallpaper_directory(self):
+        """Open file dialog to select wallpaper directory."""
+        directory = QFileDialog.getExistingDirectory(
+            self, 
+            "Select Wallpaper Directory",
+            str(self.settings.get('wallpaper.directory', '~/Pictures/Wallpapers'))
+        )
+        if directory:
+            self.wallpaper_dir_label.setText(directory)
+            
+            # Use the same pattern as color toggle - save setting and refresh
+            self.settings.set('wallpaper.directory', directory)
+            self.settings.save_settings()
+            
+            # Apply the change immediately to the main window (same pattern as color toggle)
+            if hasattr(self, 'parent') and self.parent():
+                parent = self.parent()
+                if hasattr(parent, 'wallpaper_manager') and hasattr(parent, 'load_wallpapers'):
+                    # Update wallpaper manager to use new directory
+                    parent.wallpaper_manager.set_wallpaper_directory(directory)
+                    
+                    # Update main window display
+                    parent.folder_path_label.setText(str(parent.wallpaper_manager.wallpaper_dir))
+                    
+                    # Refresh using same method as color toggle
+                    parent.load_wallpapers()
+
+    def on_show_all_colors_changed(self, checked):
+        """Handle live change of show all colors setting."""
+        # Save the setting immediately
+        self.settings.set('ui.show_all_colors', checked)
+        self.settings.save_settings()
+        
+        # Apply the change to the main window if it exists
+        if hasattr(self, 'parent') and self.parent():
+            parent = self.parent()
+            if hasattr(parent, 'show_16_colors') and hasattr(parent, 'update_color_swatches'):
+                # Update main window state
+                parent.show_16_colors = checked
+                
+                # Update the toggle button text and state
+                if hasattr(parent, 'color_count_toggle'):
+                    parent.color_count_toggle.setChecked(checked)
+                    if checked:
+                        parent.color_count_toggle.setText("Show 8 Colors")
+                    else:
+                        parent.color_count_toggle.setText("Show 16 Colors")
+                
+                # Refresh the color swatches display
+                parent.update_color_swatches()
+    
+    def save_settings(self):
+        """Save settings and close dialog."""
+        # Save basic settings
+        self.settings.set('wallpaper.directory', self.wallpaper_dir_label.text())
+        self.settings.set('ui.backend', self.ui_backend_combo.currentText())
+        self.settings.set('ui.floating_window', self.floating_window_check.isChecked())
+        self.settings.set('theme.show_results_dialog', self.show_results_dialog_check.isChecked())
+        self.settings.set('ui.show_all_colors', self.show_all_colors_check.isChecked())
+        self.settings.set('wallpaper.live_preview', self.live_preview_check.isChecked())
+        
+        # Save managed apps settings
+        for app_name, checkbox in self.app_checkboxes.items():
+            self.settings.set(f'managed_apps.{app_name}.enabled', checkbox.isChecked())
+        
+        # Save to file
+        self.settings.save_settings()
+        
+        self.accept()
 
 
 class ThemeManagerApplication(QApplication):

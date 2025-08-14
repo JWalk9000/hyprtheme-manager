@@ -1,11 +1,33 @@
+managed_apps:
+  gtk:
+    enabled: true
+    location: ~/.config/gtk-3.0/settings.ini
+  gtk4:
+    enabled: true
+    location: org.gnome.desktop.interface
+  kitty:
+    enabled: true
+    location: ~/.config/kitty/pywal.conf
+  mako:
+    enabled: true
+    location: ~/.config/mako/config
+  qt:
+    enabled: true
+    location: ~/.config/qt5ct/qt5ct.conf
+  waybar:
+    enabled: true
+    location: ~/.config/waybar/style.css
+  wofi:
+    enabled: true
+    location: ~/.config/wofi/style.css
 theme:
   show_results_dialog: true
 ui:
-  backend: gtk
+  backend: qt
   floating_window: true
+  show_all_colors: false
   window_height: 600
   window_width: 800
-  show_all_colors: true
 wallpaper:
-  directory: ~/Pictures/Wallpapers
+  directory: /home/zeus/Pictures/Wallpapers
   live_preview: true
