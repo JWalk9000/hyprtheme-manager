@@ -5,11 +5,9 @@ All functions and classes for managing wallpapers, including caching colors and 
 Clean implementation that is UI agnostic. Includes Hyprland wallpaper setting.
 """
 
-import os
 import json
 import yaml
 import hashlib
-import tempfile
 import subprocess
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple

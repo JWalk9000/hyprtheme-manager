@@ -10,7 +10,6 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QHBoxLayout
                              QWidget, QLabel, QPushButton, QFrame, QScrollArea,
                              QGridLayout)
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont
 
 from app_settings import AppSettings
 from color_manager import color_manager
@@ -44,6 +43,10 @@ class ThemeManagerWindow(QMainWindow):
         
         # Apply colors to the Qt application
         color_manager.apply_colors_to_qt_app(QApplication.instance())
+        
+        # Apply wallpaper grid styling with current colors
+        if hasattr(self, 'wallpaper_scroll'):
+            self.apply_wallpaper_grid_styling()
 
     def setup_ui(self):
         """Initializes the UI components according to the UI plan."""
@@ -108,6 +111,9 @@ class ThemeManagerWindow(QMainWindow):
         grid_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         grid_scroll.setMinimumHeight(300)
         grid_scroll.setWidgetResizable(True)  # This is important!
+        
+        # Store reference for styling
+        self.wallpaper_scroll = grid_scroll
         
         self.grid_widget = QWidget()
         self.grid_widget.setMinimumSize(500, 300)  # Ensure minimum size
@@ -188,6 +194,9 @@ class ThemeManagerWindow(QMainWindow):
         
         button_layout.addStretch()
         main_layout.addLayout(button_layout)
+
+        # Apply initial wallpaper grid styling
+        self.apply_wallpaper_grid_styling()
 
         print("ThemeManagerWindow (Qt) UI skeleton complete.")
 
@@ -534,11 +543,48 @@ class ThemeManagerWindow(QMainWindow):
         # Apply new colors to the application
         color_manager.apply_colors_to_qt_app(QApplication.instance())
         
+        # Update wallpaper grid background
+        self.apply_wallpaper_grid_styling()
+        
         # Update the color swatches
         self.update_color_swatches()
         
         # Update the preview label
         self.color_preview_label.setText("Colors updated from current selection")
+
+    def apply_wallpaper_grid_styling(self):
+        """Apply background styling to the wallpaper grid using current palette colors."""
+        if hasattr(self, 'wallpaper_scroll'):
+            # Use color0 (usually dark background) and color8 (accent) for styling
+            bg_color = color_manager.get_color('color0') or '#2b2b2b'
+            border_color = color_manager.get_color('color8') or '#404040'
+            hover_color = color_manager.get_color('color1') or '#666666'
+            
+            # Create stylesheet for scroll area and its contents
+            stylesheet = f"""
+                QScrollArea {{
+                    background-color: {bg_color};
+                    border: 1px solid {border_color};
+                    border-radius: 4px;
+                }}
+                QScrollArea > QWidget > QWidget {{
+                    background-color: {bg_color};
+                }}
+                QScrollArea QScrollBar:vertical {{
+                    background-color: {bg_color};
+                    border: 1px solid {border_color};
+                    width: 12px;
+                }}
+                QScrollArea QScrollBar::handle:vertical {{
+                    background-color: {border_color};
+                    border-radius: 4px;
+                    min-height: 20px;
+                }}
+                QScrollArea QScrollBar::handle:vertical:hover {{
+                    background-color: {hover_color};
+                }}
+            """
+            self.wallpaper_scroll.setStyleSheet(stylesheet)
 
     def on_apply_wallpaper_clicked(self):
         """Handle wallpaper apply button click."""

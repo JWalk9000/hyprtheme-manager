@@ -3,9 +3,8 @@ Shared color management system for both GTK and Qt UI backends.
 This module provides a unified way to manage and apply color themes.
 """
 
-import os
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict
 
 
 class ColorManager:

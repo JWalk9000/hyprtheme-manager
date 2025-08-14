@@ -3,14 +3,12 @@ Plugin system for Theme Manager.
 Handles application-specific theme updates with safe config management.
 """
 
-import os
 import re
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Dict, List, Optional
 from abc import ABC, abstractmethod
-import yaml
 
 
 class ThemePlugin(ABC):
